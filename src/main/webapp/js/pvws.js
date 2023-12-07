@@ -2,12 +2,12 @@
 class PVWS
 {
     /** Create PV Web Socket
-     * 
+     *
      *  <p>Message handler will be called with 'update'
      *  or 'error' message.
      *  The 'update' will contain the complete PV value,
      *  i.e. the merge of last known value and actual update.
-     *  
+     *
      *  @param url URL of the PV web socket, e.g. "ws://localhost:8080/pvws/pv"
      *  @param connect_handler Called with true/false when connected/disconnected
      *  @param message_handler Called with each received message
@@ -17,7 +17,7 @@ class PVWS
         this.url = url;
         this.connect_handler = connect_handler;
         this.message_handler = message_handler;
-        
+
         // Map of PVs to last known value,
         // merging metadata and value updates.
         this.values = {}
@@ -34,13 +34,13 @@ class PVWS
         this.socket.onclose = event => this.handleClose(event);
         this.socket.onerror = event => this.handleError(event);
     }
-    
+
     handleConnection()
     {
         console.log("Connected to " + this.url);
         this.connect_handler(true);
     }
-    
+
     handleMessage(message)
     {
         // console.log("Received Message: " + message);
@@ -70,14 +70,14 @@ class PVWS
                 jm.value = Array.prototype.slice.call(jm.value);
                 delete jm.b64int;
             }
-                
+
             // Merge received data with last known value
             let value = this.values[jm.pv];
             // No previous value:
             // Default to read-only, no data
             if (value === undefined)
                 value = { pv: jm.pv, readonly: true };
-            
+
             // Update cached value with received changes
             Object.assign(value, jm);
             this.values[jm.pv] = value;
@@ -94,7 +94,7 @@ class PVWS
         console.error(event);
         this.close();
     }
-    
+
     handleClose(event)
     {
         this.connect_handler(false);
@@ -114,14 +114,16 @@ class PVWS
      */
     ping()
     {
+        console.log("Ping")
         this.socket.send(JSON.stringify({ type: "ping" }))
     }
-    
+
     /** Subscribe to one or more PVs
      *  @param pvs PV name or array of PV names
      */
     subscribe(pvs)
     {
+        console.log("Subscribe")
         if (pvs.constructor !== Array)
             pvs = [ pvs ];
         // TODO Remember all PVs so we can re-subscribe after close/re-open
@@ -133,23 +135,24 @@ class PVWS
      */
     clear(pvs)
     {
+        console.log("Clear")
         if (pvs.constructor !== Array)
             pvs = [ pvs ];
         // TODO Forget PVs so we don't re-subscribe after close/re-open
         this.socket.send(JSON.stringify({ type: "clear", pvs: pvs }));
-        
+
         // Remove entry for cleared PVs from this.values
         let pv;
         for (pv of pvs)
             delete this.values[pv];
     }
-    
+
     /** Request list of PVs */
     list()
     {
         this.socket.send(JSON.stringify({ type: "list" }));
     }
-    
+
     /** Write to PV
      *  @param pvs PV name
      *  @param value number or string
@@ -158,9 +161,9 @@ class PVWS
     {
         this.socket.send(JSON.stringify({ type: "write", pv: pv, value: value }));
     }
-    
+
     /** Close the web socket.
-     * 
+     *
      *  <p>Socket will automatically re-open,
      *  similar to handling an error.
      */
